@@ -24,6 +24,8 @@
 #' @importFrom lubridate tz
 #' @importFrom smwrBase waterYear
 #' @importFrom unitted u v get_units
+#' @importFrom methods is
+#' @importFrom stats aggregate qt qnorm setNames
 #' @param preds Either a vector of predicted instantaneous fluxes or 
 #'   concentrations or a data.frame containing the columns "fit", "se.pred", and
 #'   "date"
@@ -127,17 +129,16 @@ aggregateSolute <- function(
   }
   ci.distrib <- match.arg.loadflex(ci.distrib, c("lognormal","normal"))
   if(is.data.frame(preds)) {
-    dates <- preds[,eval(metadata@dates)] #this should be metadata@dates
-    if("se.pred" %in% colnames(preds)) {#if("d" %in% colnames(dat))
-      se.preds <- preds$se.pred
-    }else{
-      stop("could not find a column named se.pred in the custom preds dataframe.")
-      }
-    if("fit" %in% colnames(preds)){ 
-      preds <- preds$fit
-    }else{
-      stop("could not find a column named fit in the custom preds dataframe.")
-    }
+    # check for required columns
+    need_col <- c('date', 'se.pred', 'fit')
+    missing_col <- need_col[!need_col %in% colnames(preds)]
+    if(length(missing_col) > 0) 
+      stop(paste0("missing column[s] ", paste0("'", missing_col, "'", collapse=' & '), " in the preds data.frame"))
+    
+    # extract columns into vectors
+    dates <- preds[,'date']
+    se.preds <- preds[,'se.pred']
+    preds <- preds[,'fit']
   }
   
   # Check that dates contains actual dates
